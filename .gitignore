@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+
+# modellek: maguktol letoltodnek, nem valok repoba
+*.task
+*.tflite
+
+# sajat tanitoadat es modell - a te arcodra es kezedre tanult
+gesture_model.pkl
+
+# memek jogi okokbol
+memes/
