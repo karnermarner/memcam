@@ -92,7 +92,7 @@ GESTURE_MODEL = ("gesture_recognizer.task",
 FACE_MODEL = ("blaze_face_short_range.tflite",
               "https://storage.googleapis.com/mediapipe-models/face_detector/"
               "blaze_face_short_range/float16/1/blaze_face_short_range.tflite")
-CUSTOM_MODEL = "gesture_model.pkl"
+CUSTOM_MODEL = "gesture_model_v3.1.pkl"
 
 STATIC_EXT = (".png", ".jpg", ".jpeg", ".bmp")
 ANIMATED_EXT = (".gif", ".webp", ".apng")

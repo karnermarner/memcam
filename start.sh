@@ -68,7 +68,10 @@ CAMERA_INDEX="$LOCAL_INDEX"
 if (( USE_PHONE )); then
   command -v scrcpy &>/dev/null || die "nincs scrcpy. Futtasd: ./setup.sh"
 
-  if ! adb devices 2>/dev/null | awk 'NR>1 && $2=="device"' | grep -q .; then
+  # command substitution-nel gyujtjuk be, nem "| grep -q ."-val: igy az adb
+  # kimenetet vegig olvassuk, nem zarodik be korai a cso, es set -o pipefail
+  # mellett sem hibazik hamisan (lasd a v4l2loopback-check kommentjet lejjebb)
+  if [[ -z "$(adb devices 2>/dev/null | awk 'NR>1 && $2=="device"')" ]]; then
     die "nincs csatlakoztatott adb eszkoz.
   Kapcsold be a telefonon a vezetek nelkuli hibakeresest, majd:
     adb connect IP:PORT
@@ -76,10 +79,21 @@ if (( USE_PHONE )); then
     adb pair IP:PARITASI_PORT"
   fi
 
-  lsmod | grep -q '^v4l2loopback' || die "a v4l2loopback nincs betoltve. Futtasd: ./setup.sh"
+  # /proc/modules-bol olvasunk: az FAJL, nincs mogotte elo folyamat, amit a
+  # grep -q korai lezarasa SIGPIPE-elne. "lsmod | grep -q ..." idonkent
+  # hamisan hibazna itt set -o pipefail mellett: a grep -q az elso talalat
+  # utan bezarja a csovet, az lsmod SIGPIPE-ot kap, nemnulla kodal ter
+  # vissza, es a pipefail ezt hibanak veszi - meg ha a grep talalt is.
+  grep -q '^v4l2loopback ' /proc/modules || die "a v4l2loopback nincs betoltve. Futtasd: ./setup.sh"
 
   printf 'scrcpy inditasa -> %s\n' "$PHONE_DEVICE"
-  scrcpy \
+  # stdbuf -oL -eL: fajlba/csobe iranyitaskor a legtobb program alapbol
+  # teljesen pufferelt modra valt (csak akkor ir, ha a puffer megtelik
+  # vagy a folyamat leall), nem sor-pufferelt modra, mint terminalon.
+  # Enelkul a "v4l2 sink started" sor a scrcpy memoriajaban ulhet meg
+  # masodpercekig, mire kiirodik a logfajlba - a varakozo ciklus addig
+  # nem latja, es hamisan timeoutol, meg ha a scrcpy mar regen elindult.
+  stdbuf -oL -eL scrcpy \
     --video-source=camera \
     --camera-facing="$CAMERA_FACING" \
     --camera-size="$CAMERA_SIZE" \
@@ -90,9 +104,12 @@ if (( USE_PHONE )); then
   SCRCPY_PID=$!
 
   # Az exclusive_caps miatt az eszkoz csak akkor lesz capture, ha mar ir
-  # ra valaki. Ezert varunk, nem indulunk azonnal.
+  # ra valaki. Ezert varunk, nem indulunk azonnal. Ha a telefonon maradt
+  # egy korabbi, arva scrcpy-szerver, az uj kliens eloszor leallitja azt
+  # ("WARN: Killing the server..."), majd ujraindul - ez tobb mint 10
+  # masodpercet is igenybe vehet, ezert 30 masodperces a hatarido.
   printf 'varakozas a kamerakepre'
-  for _ in $(seq 40); do
+  for _ in $(seq 120); do
     if ! kill -0 "$SCRCPY_PID" 2>/dev/null; then
       printf '\n'
       tail -20 /tmp/memcam-scrcpy.log >&2

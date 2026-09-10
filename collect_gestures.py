@@ -76,6 +76,8 @@ CLASSES = [
     "Salute",
     "FingerGuns",
     "MiddleFinger",
+    "Telephone",
+    "Okay",
 ]
 
 OUT_CSV = "gestures.csv"

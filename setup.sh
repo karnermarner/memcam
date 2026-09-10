@@ -175,7 +175,7 @@ fi
 step "Secure Boot / modulalairas"
 
 SECURE_BOOT=0
-if command -v mokutil &>/dev/null && mokutil --sb-state 2>/dev/null | grep -qi enabled; then
+if command -v mokutil &>/dev/null && mokutil --sb-state 2>/dev/null | grep -i enabled >/dev/null; then
   SECURE_BOOT=1
 fi
 
@@ -196,7 +196,7 @@ if (( SECURE_BOOT )); then
   fi
 
   if sudo test -f "$MOK_CERT"; then
-    if sudo mokutil --test-key "$MOK_CERT" 2>/dev/null | grep -qi "already enrolled"; then
+    if sudo mokutil --test-key "$MOK_CERT" 2>/dev/null | grep -i "already enrolled" >/dev/null; then
       ok "kulcs beiktatva"
       MOK_READY=1
     else
@@ -223,8 +223,15 @@ fi
 
 step "v4l2loopback"
 
+# /proc/modules-bol olvasunk grep-q-val: az egy FAJL, nincs mogotte elo
+# folyamat, amit a korai lezaras SIGPIPE-elne. "lsmod | grep -q ..." lattato-
+# lag ugyanezt csinalja, de set -o pipefail mellett idonkent hamisan hibazik:
+# a grep -q az elso talalat utan azonnal bezarja a csovet, az lsmod ekkor
+# SIGPIPE-ot kap es nemnulla kodal ter vissza, a pipefail pedig ezt hibanak
+# szamitja - meg akkor is, ha a grep tenylegesen megtalalta, amit keresett.
+module_loaded() { grep -q '^v4l2loopback ' /proc/modules; }
 module_file() { modinfo -n v4l2loopback 2>/dev/null || true; }
-module_signed() { modinfo v4l2loopback 2>/dev/null | grep -q '^signer:'; }
+module_signed() { modinfo v4l2loopback 2>/dev/null | grep '^signer:' >/dev/null; }
 
 build_v4l2loopback() {
   if [[ ! -d "$V4L2_SRC/.git" ]]; then
@@ -289,7 +296,7 @@ if (( SECURE_BOOT )) && [[ -n "$(module_file)" ]] && ! module_signed; then
 fi
 
 # betoltes
-if lsmod | grep -q '^v4l2loopback'; then
+if module_loaded; then
   ok "modul betoltve"
 else
   warn "modul nincs betoltve"
@@ -303,7 +310,7 @@ else
   fi
 fi
 
-if command -v v4l2-ctl &>/dev/null && lsmod | grep -q '^v4l2loopback'; then
+if command -v v4l2-ctl &>/dev/null && module_loaded; then
   # a "Cannot open device /dev/videoN" sor normalis, ha nincs fizikai kamera
   v4l2-ctl --list-devices 2>/dev/null | grep -E '^(MemCam|PhoneCam)' | while read -r line; do
     info "$line"
