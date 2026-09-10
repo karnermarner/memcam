@@ -331,3 +331,12 @@ Linux: `v4l2loopback`, plus `scrcpy` and `adb` if you want to use a phone as
 the camera. Windows: OBS Studio.
 
 Model files download themselves on first run.
+
+---
+
+## Notes
+
+Built with AI assistance (Claude) for the implementation. The architecture
+decisions, debugging, training data and the diagnosis behind the feature
+vector design are mine.
+

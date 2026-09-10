@@ -335,3 +335,12 @@ Linux: `v4l2loopback`, plusz `scrcpy` és `adb`, ha telefont akarsz kameraként
 használni. Windows: OBS Studio.
 
 A modellfájlok első indításkor maguktól letöltődnek.
+
+---
+
+## Megjegyzés
+
+A kód AI-asszisztálva készült (Claude). Az architekturális döntések, a
+hibakeresés, a tanítóadat és a jellemzővektor tervezése mögötti diagnózis az
+enyém.
+
